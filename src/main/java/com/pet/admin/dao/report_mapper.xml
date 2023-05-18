@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC   "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd"
+>
+<!-- xml 을 java 에서 쓰기 위해 연결되는 interface 가 필요 하다. -->
+
+<!-- 쿼리문을 작성해둔 interface 주소 -->
+<mapper namespace="com.pet.admin.dao.ReportDAO">
+   
+   <!-- 아작스는 * 쓰면 안됨 -->
+		<select id="repList" parameterType="HashMap" resultType="com.pet.admin.dto.ReportDTO">
+		SELECT reportNum, userID, categoryCode, reportName, reportDetail, reportDate, reportBlind, reportIdenNum,repProcess
+		FROM report ORDER BY reportNum DESC 
+		LIMIT #{param2} OFFSET ${param3} 
+		</select>
+		
+		<select id="repCategoryCodeList" parameterType="HashMap" resultType="com.pet.admin.dto.ReportDTO">
+		SELECT reportNum, userID, categoryCode, reportName, reportDetail, reportDate, reportBlind, reportIdenNum,repProcess 
+		FROM report WHERE categoryCode = #{param2} ORDER BY reportNum DESC 
+		LIMIT #{param3} OFFSET ${param4}
+		</select>
+		
+		<select id="repListByProcess" parameterType="HashMap" resultType="com.pet.admin.dto.ReportDTO">
+		SELECT reportNum, userID, categoryCode, reportName, reportDetail, reportDate, reportBlind, reportIdenNum,repProcess 
+		FROM report WHERE repProcess = #{param2} ORDER BY reportNum DESC 
+		LIMIT #{param3} OFFSET ${param4}
+		</select>
+		
+   		<select id="repAllList" parameterType="HashMap" resultType="com.pet.admin.dto.ReportDTO">
+		SELECT reportNum, userID, categoryCode, reportName, reportDetail, reportDate, reportBlind, reportIdenNum,repProcess 
+		FROM report WHERE categoryCode = #{param2} AND repProcess = #{param3} ORDER BY reportNum DESC 
+		LIMIT #{param4} OFFSET ${param5}
+		</select>
+   		
+   		
+   		
+   		
+   		<select id="repTotalCountList" parameterType="HashMap" resultType="java.lang.Integer">
+		SELECT COUNT(reportNum) FROM report 
+		</select>	
+		
+		<select id="repTotalCategoryCountCode" parameterType="HashMap" resultType="java.lang.Integer">
+		SELECT COUNT(reportNum) FROM report WHERE categoryCode = #{param2}
+		</select>	
+		
+		<select id="repTotalCountListByProcess" parameterType="HashMap" resultType="java.lang.Integer">
+		SELECT COUNT(reportNum) FROM report WHERE repProcess = #{param2}
+		</select>	
+		
+		<select id="repTotalCategoryAll" parameterType="HashMap" resultType="java.lang.Integer">
+		SELECT COUNT(reportNum) FROM report WHERE categoryCode = #{param2} AND repProcess = #{param3}
+		</select>
+		
+
+		
+		
+		<select id="repDetail"  resultType="com.pet.admin.dto.ReportDTO">
+		SELECT r.*,p.SERPHOTONAME FROM REPORT R LEFT OUTER JOIN PHOTO P ON p.PHOTOIDENNUM = #{param1} WHERE r.REPORTNUM = #{param1} AND p.PHOTOBLINDWHETHER = FALSE
+		LIMIT 1
+		</select>
+		
+		<select id="repreplist" resultType="com.pet.admin.dto.ReportDTO">
+   			SELECT * FROM reportreply WHERE reportNum = #{param1} AND repReplyNum = #{param2} AND reportProcess = #{param3} ORDER BY reportNum DESC
+   		</select>
+   		
+   		<select id="repreplist2" resultType="com.pet.admin.dto.ReportDTO">
+   			SELECT * FROM reportreply WHERE reportNum = #{param1} ORDER BY reportNum DESC
+   		</select>
+		
+		<insert id="reprepwrite">
+   			INSERT INTO reportreply(userID,reportNum,reportProcess)
+   			VALUES (#{param3},#{param1},#{param2})
+		</insert>
+		
+		<delete id="reprepdelte">
+			DELETE FROM reportreply WHERE repReplyNum = #{param1}
+		</delete>
+		
+		<update id="reprepupdate" parameterType="Hashmap">
+   			UPDATE reportreply SET reportProcess = #{reportProcess} WHERE repReplyNum = #{repReplyNum}
+   		</update>
+		
+		<insert 
+		useGeneratedKeys="true"
+		keyColumn="reportNum"
+		keyProperty="reportNum"
+		
+		id="reportWrite" parameterType="com.pet.admin.dto.ReportDTO">
+		INSERT INTO report(userID,categoryCode,reportName,reportDetail,repProcess)
+   		VALUES(#{userID},#{categoryCode},#{reportName},#{reportDetail},false)
+		</insert>
+	
+		<insert id="fileWrite" >
+		INSERT INTO photo(categoryCode,oriPhotoname,serPhotoname,photoBlindWhether,photoIdenNum)
+			VALUES(#{param1},#{param2},#{param3},false,#{param4})
+
+		</insert>
+		
+		<update id="repprocessupdate" parameterType="Hashmap">
+   			UPDATE report SET repProcess = #{param1} WHERE reportNum = #{param2}
+   		</update>
+		
+</mapper>

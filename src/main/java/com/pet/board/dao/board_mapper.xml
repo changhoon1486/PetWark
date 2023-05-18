@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC   "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd"
+>
+<!-- xml 을 java 에서 쓰기 위해 연결되expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {@org.springframework.beans.factory.annotation.Autowired(required=true)}는 interface 가 필요 하다. -->
+
+<!-- 쿼리문을 작성해둔 interface 주소 -->
+<mapper namespace="com.pet.board.dao.BoardDAO">
+   
+   <!--  메인 보드 리스트 -->
+   <select id="boardList" resultType="com.pet.board.dto.BoardDTO">
+		(SELECT b.*, p.serPhotoname, p.photoBlindWhether, count(r.replyNum) AS replyCount
+		FROM board b 
+		LEFT OUTER JOIN photo p ON b.boardNum = p.photoIdenNum 
+		LEFT OUTER JOIN reply r ON b.boardNum = r.boardNum 
+		WHERE b.categoryCode='B_01' AND b.boardBlindWhether ='false' AND p.photoBlindWhether = 'false'
+		GROUP BY b.boardNum ORDER BY boardNum DESC LIMIT 4)
+		UNION ALL
+		(SELECT b.*, NULL, NULL ,count(r.replyNum) AS replyCount
+		FROM board b 
+		LEFT OUTER JOIN reply r ON b.boardNum = r.boardNum 
+		WHERE categoryCode='B_02' AND boardBlindWhether ='false' 
+		GROUP BY b.boardNum ORDER BY boardNum DESC LIMIT 5)
+		UNION ALL
+		(SELECT b.*, NULL, NULL ,count(r.replyNum) AS replyCount
+		FROM board b 
+		LEFT OUTER JOIN reply r ON b.boardNum = r.boardNum 
+		WHERE categoryCode='B_03' AND boardBlindWhether ='false' 
+		GROUP BY b.boardNum ORDER BY boardNum DESC LIMIT 5)
+		UNION ALL
+		(SELECT b.*, NULL, NULL ,count(r.replyNum) AS replyCount
+		FROM board b 
+		LEFT OUTER JOIN reply r ON b.boardNum = r.boardNum 
+		WHERE categoryCode='B_04' AND boardBlindWhether ='false' 
+		GROUP BY b.boardNum ORDER BY boardNum DESC LIMIT 5);
+	</select>
+ 
+ 	<!-- 글작성 -->
+ 	<insert 
+		useGeneratedKeys="true"
+		keyColumn="boardNum"
+		keyProperty="boardNum"
+		
+		id="boardWrite" parameterType="com.pet.board.dto.BoardDTO">
+		INSERT INTO board(userID,categoryCode,boardName,boardDetail,noticeWhether,
+   		boardBlindWhether,boardbHit,inqProcess)
+   		VALUES(#{userID},#{categoryCode},#{boardName},#{boardDetail},0,0,0,0)
+	</insert>
+	
+	<!-- 파일저장 -->
+	<insert id="fileWrite" >
+		INSERT INTO photo(categoryCode,oriPhotoname,serPhotoname,photoBlindWhether,photoIdenNum)
+			VALUES(#{param1},#{param2},#{param3},false,#{param4})
+	</insert>
+   
+   <!-- 글 상세보기 -->
+	<select id="boardDetail" resultType="com.pet.board.dto.BoardDTO">
+		SELECT c.categoryCode,b.userID, m.userNickname, b.boardName, b.boardDetail, b.boardWriteDate, b.boardbHit, 
+       c.categoryName, p.photoNum, p.serPhotoname, p.photoIdenNum, b.boardNum, p.photoBlindWhether, m.Role
+		FROM board b 
+		LEFT OUTER JOIN photo p ON b.boardNum = p.photoIdenNum 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		LEFT OUTER JOIN category c ON b.categoryCode = c.categoryCode
+		WHERE b.boardNum = #{param1}
+		  AND b.boardBlindWhether = 0 
+		  AND (p.photoBlindWhether = 0 OR p.photoBlindWhether IS NULL) LIMIT 1
+  </select> 
+   
+   <!-- 최초 등록 시 사진이 있는 게시물인지 없는 게시물인지 체크 -->
+   <select id="boardPhotoCount" resultType="int">
+   	SELECT count(photoIdenNum) FROM photo WHERE photoIdenNum = #{param1}
+   </select>
+   
+   <!--  사진 블라인드 처리여부 체크 -->
+   <select id="findPhotoBlindWhether" resultType="com.pet.board.dto.BoardDTO">
+   		SELECT photoBlindWhether,serPhotoname FROM photo WHERE photoIdenNum = #{param1} 
+   		ORDER BY photoNum DESC LIMIT 1;
+   </select>
+   <!-- 사진삭제된 글 상세보기 -->
+   <select id="boardDetailPhotoDel" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.userID, b.boardName, b.boardDetail, b.boardWriteDate, b.boardbHit, b.categoryCode, 
+	       p.photoNum, p.serPhotoname, p.photoIdenNum, b.boardNum, p.photoBlindWhether,c.categoryName, m.userNickname, m.Role
+		FROM board b LEFT OUTER JOIN photo p ON b.boardNum = p.photoIdenNum
+		LEFT OUTER JOIN category c ON b.categoryCode = c.categoryCode 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		WHERE b.boardNum = #{param1} 
+			AND b.boardBlindWhether = 0 
+			AND (p.photoBlindWhether = 1 OR p.photoBlindWhether IS NULL) ORDER BY photoNum DESC LIMIT 1;
+	</select>
+	
+	<!-- 조회수 증가 -->
+   <update id="boardbHit" parameterType="String">
+   		UPDATE board SET boardbHit = boardbHit+1 WHERE boardNum = #{param1}
+	</update>
+	
+	<!-- 글 삭제 -->
+	<update id="boardDelete" >
+		<!-- DELETE FROM board WHERE boardNum = #{param1}  -->
+		UPDATE board SET boardBlindWhether = true WHERE boardNum = #{param1}
+	</update>
+	
+	<!-- 사진 찾기 
+	<select id="findFile" resultType="String">
+		SELECT serPhotoname FROM photo WHERE photoIdenNum = #{param1} AND photoBlindWhether = true
+	</select>
+	-->
+	
+	<!-- 글 수정 -->
+	<update id="boardUpdate" parameterType="hashmap">
+		UPDATE board SET boardName=#{boardName}, boardDetail=#{boardDetail} 
+		WHERE boardNum = #{boardNum} or  boardNum in (select photoIdenNum from photo 
+		where photoIdenNum = #{boardNum})
+	</update>
+	
+	<!-- 사진 삭제 -->
+	<update id="photoDelete">
+		UPDATE photo SET photoBlindWhether = 1 WHERE serPhotoname = #{param1}
+	</update>
+	
+	<!-- ajax 리스트 -->
+	<select id="list" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname,
+	    COUNT(r.replyNum) AS replyCount FROM board b 
+		LEFT JOIN member m ON b.userID = m.userID
+		LEFT JOIN reply r ON b.boardNum = r.boardNum
+		WHERE b.boardBlindWhether = false AND b.categoryCode = #{param3}
+		GROUP BY b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname
+		ORDER BY b.boardNum DESC LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- ajax B_01 리스트 -->
+	<select id = "boardPhotoList" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname,
+	   COUNT(r.replyNum) AS replyCount, p.serPhotoname
+		FROM board b 
+		LEFT JOIN member m ON b.userID = m.userID
+		LEFT JOIN reply r ON b.boardNum = r.boardNum
+		LEFT JOIN photo p ON b.boardNum = p.photoIdenNum AND p.photoBlindWhether  = false
+		WHERE b.boardBlindWhether = false AND b.categoryCode = #{param3}
+		GROUP BY b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname, p.serPhotoname
+		ORDER BY b.boardNum DESC LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- 페이징 -->
+	<select id="totalCount" resultType="int">
+		SELECT COUNT(BoardNum) FROM board WHERE categoryCode = #{param1} AND boardBlindWhether = false
+	</select>
+	
+	<!-- 제목으로 조건 검색했을 때 페이징 -->
+	<select id="boardNameSearchTotal" resultType="int">
+		SELECT COUNT(BoardNum)
+		FROM board b 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		WHERE b.boardBlindWhether = false
+			AND b.categoryCode = #{param1} 
+			AND b.boardName LIKE CONCAT('%', #{param2}, '%')
+	</select> 
+	
+	<!-- 제목으로 조건 검색 -->
+	<select id="boardNameSearch" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname
+		FROM board b 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		WHERE b.boardBlindWhether =false
+			AND b.categoryCode = #{param3} 
+			AND b.boardName LIKE CONCAT('%', #{param5}, '%')
+		ORDER BY b.boardNum DESC
+		LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- B_1 제목 조건 검색 -->
+	<select id = "boardPhotoNameSearch" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname, p.serPhotoname
+		FROM board b 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		LEFT JOIN photo p ON b.boardNum = p.photoIdenNum AND p.photoBlindWhether  = false
+		WHERE b.boardBlindWhether =false
+			AND b.categoryCode = #{param3} 
+			AND b.boardName LIKE CONCAT('%', #{param5}, '%')
+		ORDER BY b.boardNum DESC
+		LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- 닉네임으로 조건 검색 페이징 -->
+	<select id="boardNicknamesearchTotal" resultType="int">
+		SELECT COUNT(BoardNum)
+		FROM board b 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		WHERE b.boardBlindWhether = false
+			AND b.categoryCode = #{param1} 
+			AND m.userNickname = #{param2}
+	</select>
+	
+	<!-- 닉네임으로 조건 검색 -->
+	<select id="boardNicknamesearch" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname
+		FROM board b LEFT OUTER JOIN member m ON b.userID = m.userID
+		WHERE b.boardBlindWhether ='false' 
+			AND b.categoryCode = #{param3} 
+			AND m.userNickname = #{param5}
+		ORDER BY b.boardNum DESC
+		LIMIT #{param1} OFFSET #{param2}
+	</select>
+	 
+	<!-- B_1 닉네임으로 조건 검색 -->
+	<select id="boardPhotoNicknamesearch" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname,p.serPhotoname
+		FROM board b LEFT OUTER JOIN member m ON b.userID = m.userID
+		LEFT JOIN photo p ON b.boardNum = p.photoIdenNum AND p.photoBlindWhether  = false
+		WHERE b.boardBlindWhether ='false' 
+			AND b.categoryCode = #{param3} 
+			AND m.userNickname = #{param5}
+		ORDER BY b.boardNum DESC
+		LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- 아이디로 조건 검색 페이징 -->
+	<select id="boarduserIDsearchTotal" resultType="int">
+		SELECT COUNT(BoardNum)
+		FROM board b 
+		LEFT OUTER JOIN member m ON b.userID = m.userID
+		WHERE b.boardBlindWhether = false
+			AND b.categoryCode = #{param1} 
+			AND b.userID = #{param2}
+	</select>
+	
+	<!-- 아이디로 조건 검색 -->
+	<select id="boarduserIDsearch" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname
+		FROM board b LEFT OUTER JOIN member m ON b.userID = m.userID 
+		WHERE b.boardBlindWhether ='false' 
+			AND b.categoryCode = #{param3} 
+			AND b.userID = #{param5}
+		ORDER BY b.boardNum DESC
+		LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- B_1 아이디로 조건 검색 -->
+	<select id="boardPhotouserIDsearch" resultType="com.pet.board.dto.BoardDTO">
+		SELECT b.BoardNum, b.userID, b.categoryCode, b.boardName, b.boardbHit, b.boardWriteDate, b.boardBlindWhether, m.userNickname,p.serPhotoname
+		FROM board b LEFT OUTER JOIN member m ON b.userID = m.userID
+		LEFT JOIN photo p ON b.boardNum = p.photoIdenNum AND p.photoBlindWhether  = false
+		WHERE b.boardBlindWhether ='false' 
+			AND b.categoryCode = #{param3} 
+			AND b.userID = #{param5}
+		ORDER BY b.boardNum DESC
+		LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<!-- 댓글 작성하기 -->
+	<insert id="boardRepWrite">
+		INSERT INTO reply(boardNum,commentDetail,commentBlindWhether,userID)
+		VALUES (#{param1},#{param2},0,#{param3})
+	</insert>
+	
+	<!--  댓글 리스트 1 -->
+	<select id="boardRepList" resultType="com.pet.board.dto.BoardDTO">
+   		SELECT r.*, m.userNickname as replyUser FROM reply r 
+		LEFT JOIN member m ON r.userID = m.userID 
+		WHERE r.boardNum = #{param1} AND r.replyNum = #{param2} AND r.commentBlindWhether = 0 
+		ORDER BY r.boardNum DESC
+   	</select>
+   	
+   	<!--  댓글 리스트 2 -->
+	<select id="boardRepList2" resultType="com.pet.board.dto.BoardDTO">
+		SELECT r.*, m.userNickname as replyUser FROM reply r
+		LEFT OUTER JOIN member m ON r.userID = m.userID
+		WHERE r.boardNum = #{boardNum} AND r.commentBlindWhether = 0
+		ORDER BY r.boardNum DESC
+	</select>
+	
+	<!-- 댓글 수정 -->
+	<update id="boardRepUpdate" parameterType="Hashmap">
+   		UPDATE reply SET commentDetail = #{content} WHERE replyNum = #{replyNum}
+   	</update>
+   	
+   	<!-- 댓글 삭제 -->
+   	<update id="boardRepDel">
+   		UPDATE reply SET commentBlindWhether = 1 WHERE replyNum = #{param1}
+   	</update>
+   	
+   	<!-- 댓글 수정 시 조회수 -1 -->
+   	<update id="boardbHitDown">
+   		UPDATE board SET boardbHit = boardbHit - 1 WHERE boardNum = #{param1}  	
+   	</update>
+</mapper>

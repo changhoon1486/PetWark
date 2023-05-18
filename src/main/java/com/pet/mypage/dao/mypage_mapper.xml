@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC   "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd"
+>
+<!-- xml 을 java 에서 쓰기 위해 연결되는 interface 가 필요 하다. -->
+
+<!-- 쿼리문을 작성해둔 interface 주소 -->
+<mapper namespace="com.pet.mypage.dao.MyPageDAO">
+   
+   <insert id="profileWrite">
+   	INSERT INTO profile(userID, petAge, petName, petGender, petNeutered, petIntroduce, petSize)
+   	VALUES(#{param1}, #{param4}, #{param3}, #{param5}, #{param6}, #{param7}, #{param2})
+   </insert>
+      
+   <select id="findprofile" resultType="com.pet.mypage.dto.MyPageDTO">
+   	SELECT * FROM profile WHERE userID = #{param1}
+   </select>
+   
+   <select id="findprofileAndphoto" resultType="com.pet.mypage.dto.MyPageDTO">
+	  SELECT p.*, ph.serPhotoname FROM profile p
+	  LEFT JOIN photo ph ON p.profileID = ph.photoidenNum 
+	  WHERE p.userID = #{param1} AND ph.categoryCode = #{param2} AND ph.photoidenNum = #{param3} AND ph.photoBlindWhether = 0
+	</select>
+	
+	<update id="petprofileUpdate">
+		UPDATE profile SET petAge = #{param4}, petName = #{param3}, petGender = #{param5}, petNeutered = #{param6}, petIntroduce = #{param7}, petSize = #{param2}
+		WHERE userID=#{param1}
+	</update>
+		
+	<select id="myinquiryList" resultType="com.pet.mypage.dto.MyPageDTO">		
+		SELECT * FROM board WHERE userID = #{param3} 
+		AND categoryCode IN ('B_06', 'B_07', 'B_08', 'B_09', 'B_10', 'B_11') 
+		ORDER BY boardWriteDate DESC	
+	</select>
+	
+	<select id="findrouteShareList" resultType="com.pet.mypage.dto.MyPageDTO">
+		SELECT * FROM routeboard WHERE userID = #{param1}
+	</select>
+	
+	<select id="totalCount" resultType="int">
+	   	SELECT COUNT(walkNum) FROM routelist WHERE userID = #{param1}
+	</select>
+	
+	<select id="myroutlistCalllist" resultType="com.pet.mypage.dto.MyPageDTO">
+	   	SELECT * FROM routelist WHERE userID= #{param3} ORDER BY walkDate  DESC 
+	   	LIMIT #{param1} OFFSET #{param2}   
+	</select>
+	
+	<select id="mybookmarktotalCount" resultType="int">
+	   	SELECT COUNT(walkNum) FROM routelist
+		WHERE walkNum IN (SELECT walknum FROM bookmark WHERE userID = #{param1})
+		ORDER BY walkDate DESC	   	
+	</select>
+	
+	<select id="mybookmarklistCall" resultType="com.pet.mypage.dto.MyPageDTO">	   		   			
+		SELECT r.* FROM routelist r
+		INNER JOIN bookmark b ON r.walkNum = b.walknum
+		WHERE b.userID = #{param3}
+		ORDER BY r.walkDate DESC
+		LIMIT #{param1} OFFSET #{param2}
+
+	</select>
+	
+	<select id="myinquirytotalCount" resultType="int">		
+		SELECT COUNT(boardNum) FROM board WHERE userID = #{param1} 
+		AND categoryCode IN ('B_06', 'B_07', 'B_08', 'B_09', 'B_10', 'B_11') 
+		ORDER BY boardWriteDate DESC		
+	</select>
+	
+	<select id="myinquirylistCall" resultType="com.pet.mypage.dto.MyPageDTO">		
+		SELECT * FROM board WHERE userID = #{param3} 
+		AND categoryCode IN ('B_06', 'B_07', 'B_08', 'B_09', 'B_10', 'B_11') 
+		ORDER BY boardWriteDate DESC	
+		LIMIT #{param1} OFFSET #{param2}	
+	</select>
+	
+	<select id="myreporttotalCount" resultType="int">		
+		SELECT COUNT(reportNum) FROM report WHERE userID = #{param1} 		
+	</select>
+	
+	<select id="myreportlistCall" resultType="com.pet.mypage.dto.MyPageDTO">		
+		SELECT * FROM report WHERE userID = #{param3} 
+		ORDER BY reportDate DESC LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<select id="myreviewtotalCount" resultType="int">		
+		SELECT COUNT(reviewNum) FROM review WHERE userID = #{param1} 		
+	</select>
+	
+	<select id="myreviewlistCall" resultType="com.pet.mypage.dto.MyPageDTO">		
+		SELECT * FROM review WHERE userID = #{param3} 
+		ORDER BY reviewDate DESC LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<select id="otroutesharetotalCount" resultType="int">		
+		SELECT COUNT(walkrouteNum) FROM routeboard WHERE userID = #{param1} 		
+	</select>
+	
+	<select id="otroutesharelistCall" resultType="com.pet.mypage.dto.MyPageDTO">		
+		SELECT * FROM routeboard WHERE userID = #{param3} 
+		ORDER BY walkRouteWriteDate DESC LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<select id="otreviewtotalCount" resultType="int">
+		SELECT COUNT(reviewNum) FROM review WHERE userID = #{param1}
+	</select>
+			
+	<select id="otreviewlistCall" resultType="com.pet.mypage.dto.MyPageDTO">		
+		SELECT * FROM review WHERE userID = #{param3} 
+		ORDER BY reviewDate DESC LIMIT #{param1} OFFSET #{param2}
+	</select>
+	
+	<delete id="deletemr">
+		DELETE FROM routelist WHERE walkNum = #{param1} AND userID = #{param2}
+	</delete>
+	
+	<insert id="application">
+		INSERT INTO application(mateWalkNum, userID, acceptWhether) VALUES(#{param1}, #{param2},false)
+	</insert>
+	
+	<update id="cancel">
+		UPDATE application SET acceptWhether = true WHERE
+		mateWalkNum = #{param1} AND userID = #{param2}
+	</update>
+	
+	<select id="applicantlist" resultType="com.pet.mypage.dto.MyPageDTO">
+		SELECT * FROM  application WHERE mateWalkNum = #{param1} AND acceptWhether = false
+	</select>
+	
+	
+	
+	
+	
+
+   
+</mapper>

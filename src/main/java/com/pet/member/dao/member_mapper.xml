@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC   "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd"
+>
+<!-- xml 을 java 에서 쓰기 위해 연결되는 interface 가 필요 하다. -->
+
+<!-- 쿼리문을 작성해둔 interface 주소 -->
+<mapper namespace="com.pet.member.dao.MemberDAO">
+
+
+   <select id="overlayid" resultType="int">
+
+		SELECT COUNT(userID) FROM member
+			WHERE userID = #{param1}
+	</select>
+	
+	<select id="overlaypw" resultType="int">
+		SELECT COUNT(userPW) FROM member
+			WHERE userPW = #{param1}
+	</select>
+	
+	<select id="overlaynickname" resultType="int">
+		SELECT COUNT(userNickname) FROM member
+			WHERE userNickname = #{param1}
+	</select>
+	
+	<insert id="join" parameterType="hashmap">
+		INSERT INTO member(
+			userID,siID,guID,dongID,userPW,userNickname,userName,userBirthdate,userAge,userGender,userContact,userEmail,Role,userBlindWhether
+		)VALUES(
+			#{userID},#{siID},#{guID},#{dongID},#{userPW},#{userNickname},#{userName},#{userBirthdate},#{userAge},#{userGender},#{userContact},#{userEmail},'user',false
+		)					
+	</insert>
+	
+	<select id="login" resultType="com.pet.member.dto.MemberDTO">
+		SELECT * FROM member WHERE
+		userID = #{param1}
+	</select>
+	
+	<update id="memberdelete">
+		UPDATE member SET userBlindWhether = true  WHERE userNickname = #{param1}
+	</update>
+
+	
+	<select id="myinformation" resultType="com.pet.member.dto.MemberDTO">
+		SELECT m.userID, m.userNickname, m.userName, m.userEmail, m.userContact, m.userAge, m.userBirthdate, m.userGender ,s.siName, g.guName, d.dongName,m.siID, m.guID, m.dongID   
+		FROM member m INNER JOIN sidetail s ON m.siID = s.siID 
+		INNER JOIN gudetail g ON m.guID = g.guID INNER JOIN dongdetail d ON m.dongID = d.dongID 
+		WHERE m.userNickname = #{param1} AND m.userBlindWhether = false;
+	</select>	
+
+   <select id="findmemberid" resultType="com.pet.member.dto.MemberDTO">
+		SELECT userID FROM member WHERE 
+		userName = #{param1} AND userEmail = #{param2} AND userBlindWhether = false
+	</select>
+	
+	<select id="findmemberpw" resultType="int">
+		SELECT COUNT(userID) FROM member WHERE
+		userName = #{param1} AND userID = #{param2} AND userEmail = #{param3} AND userBlindWhether = false
+	</select>
+	
+	<update id="RandomPassword">
+		UPDATE member SET userPW = #{param4} WHERE 
+		userName = #{param1} AND userID = #{param2} AND userEmail = #{param3}
+	</update>	
+	
+	<select id="chkpw" resultType="com.pet.member.dto.MemberDTO">
+		SELECT userPW FROM member WHERE
+		 userNickname = #{param1} AND userBlindWhether = false
+	</select>
+		
+	<select id="changememberpw" resultType="com.pet.member.dto.MemberDTO">
+		SELECT userPW FROM member WHERE
+		 userNickname = #{param1} AND userBlindWhether = false
+	</select>
+	
+	<update id="changememberpwtrue">
+		UPDATE member SET userPW = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateusername">
+		UPDATE member SET userName = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateusernickname">
+		UPDATE member SET userNickname = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateuseremail" >
+		UPDATE member SET userEmail = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateuserContact" >
+		UPDATE member SET userContact = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateuserAge" >
+		UPDATE member SET userAge = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateuserBirthdate" >
+		UPDATE member SET userBirthdate = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateuseraddress" >
+		UPDATE member SET siID = #{param2}, guID = #{param3}, dongID = #{param4}WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<update id="updateuserGender" >
+		UPDATE member SET userGender = #{param2} WHERE 
+		userNickname = #{param1}
+	</update>
+	
+	<select id="sessionupdatenickname" resultType="com.pet.member.dto.MemberDTO">
+		SELECT userID, userNickname FROM member WHERE
+		userNickname = #{param1}
+	</select>
+	
+	
+		
+</mapper>
